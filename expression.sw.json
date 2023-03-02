@@ -7,11 +7,6 @@
   "start": "Notify Start",
   "functions": [
     {
-    "name": "waitAsync",
-    "operation": "specs/test.yaml#waitAsync",
-    "type": "asyncapi"
-  },
-    {
       "name": "Trigger Job Template on Ansible",
       "operation": "https://raw.githubusercontent.com/paulovmr/swf-demo/main/ansible/ansible_openapi.json#triggerJobTemplate",
       "type": "rest"
