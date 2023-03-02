@@ -1,0 +1,209 @@
+{
+  "id": "WaitingRoom",
+  "version": "1.0",
+  "specVersion": "0.8",
+  "name": "Waiting Room",
+  "description": "Waiting Room",
+  "start": "Notify Start",
+  "functions": [
+    {
+    "name": "waitAsync",
+    "operation": "specs/test.yaml#waitAsync",
+    "type": "asyncapi"
+  },
+    {
+      "name": "Trigger Job Template on Ansible",
+      "operation": "https://raw.githubusercontent.com/paulovmr/swf-demo/main/ansible/ansible_openapi.json#triggerJobTemplate",
+      "type": "rest"
+    },
+    {
+      "name": "Dequeue users on Waiting room",
+      "operation": "https://raw.githubusercontent.com/paulovmr/swf-demo/main/waiting-room/waiting_room_openapi.json#dequeueUsers",
+      "type": "rest"
+    },
+    {
+      "name": "Check action on RHODS",
+      "operation": "https://raw.githubusercontent.com/paulovmr/swf-demo/main/action-inferrer/action_inferrer_openapi.json#getAction",
+      "type": "rest"
+    },
+    {
+      "name": "Create ticket on ServiceNow",
+      "operation": "https://raw.githubusercontent.com/paulovmr/swf-demo/main/ticket-manager/ticket_manager_openapi.json#createTicket",
+      "type": "rest"
+    },
+    {
+      "name": "Close ticket on ServiceNow",
+      "operation": "https://raw.githubusercontent.com/paulovmr/swf-demo/main/ticket-manager/ticket_manager_openapi.json#closeTicket",
+      "type": "rest"
+    },
+    {
+      "name": "test1",
+      "operation": ".",
+      "type": "expression"
+    },
+    {
+      "name": "test2",
+      "operation": ".",
+      "type": "expression"
+    },
+    {
+      "name": "test3",
+      "operation": ".",
+      "type": "expression"
+    },
+    {
+      "name": "aaaa",
+      "operation": "",
+      "type": "expression"
+    }
+  ],
+  "events": [
+    {
+      "name": "StartEvent",
+      "source": "monitoring",
+      "type": "monitoring"
+    }
+  ],
+  "states": [
+    {
+      "name": "Notify Start",
+      "type": "event",
+      "onEvents": [
+        {
+          "eventRefs": ["StartEvent"]
+        }
+      ],
+      "transition": "Create ticket on ServiceNow"
+    },
+    {
+      "name": "Create ticket on ServiceNow",
+      "type": "operation",
+      "actions": [
+        {
+          "functionRef": {
+            "refName": "Create ticket on ServiceNow",
+            "arguments": {}
+          }
+        }
+      ],
+      "transition": "Check Action on RHODS"
+    },
+    {
+      "name": "Check Action on RHODS",
+      "type": "operation",
+      "actions": [
+        {
+          "functionRef": {
+            "refName": "Check action on RHODS",
+            "arguments": {
+              "numberOfRunningPods": ".numberOfRunningPods",
+              "avgLoad": ".avgLoad",
+              "avgLoadPerUser": ".avgLoadPerUser",
+              "minActivePods": ".minActivePods",
+              "maxActivePods": ".maxActivePods",
+              "queueLength": ".queueLength"
+            }
+          }
+        }
+      ],
+      "transition": "Execute action"
+    },
+    {
+      "name": "Execute action",
+      "type": "switch",
+      "dataConditions": [
+        {
+          "condition": "${ .action == \"SCALE_UP\" }",
+          "transition": "Scale up on Ansible"
+        },
+        {
+          "condition": "${ .action == \"SCALE_DOWN\" }",
+          "transition": "Scale down on Ansible"
+        },
+        {
+          "condition": "${ .action == \"DEQUEUE_USERS\" }",
+          "transition": "Dequeue users on Waiting Room"
+        },
+        {
+          "condition": "${ .action == \"TRIGGER_WORKFLOW\" }",
+          "transition": "Trigger another workflow"
+        }
+      ],
+      "defaultCondition": {
+        "end": true
+      }
+    },
+    {
+      "name": "Scale up on Ansible",
+      "type": "operation",
+      "actions": [
+        {
+          "functionRef": {
+            "refName": "Trigger Job Template on Ansible",
+            "arguments": {
+              "id": 1,
+              "numberOfPods": "fn:tes"
+            }
+          }
+        }
+      ],
+      "transition": "Close ticket on ServiceNow"
+    },
+    {
+      "name": "Scale down on Ansible",
+      "type": "operation",
+      "actions": [
+        {
+          "functionRef": {
+            "refName": "Trigger Job Template on Ansible",
+            "arguments": {
+              "id": 2,
+              "numberOfPods": " oth.numberOfPods"
+            }
+          }
+        }
+      ],
+      "transition": "Close ticket on ServiceNow"
+    },
+    {
+      "name": "Dequeue users on Waiting Room",
+      "type": "operation",
+      "actions": [
+        {
+          "functionRef": {
+            "refName": "Dequeue users on Waiting room",
+            "arguments": {
+              "numberOfUsers": ".numberOfUsers"
+            }
+          }
+        }
+      ],
+      "transition": "Close ticket on ServiceNow"
+    },
+    {
+      "name": "Trigger another workflow",
+      "type": "operation",
+      "actions": [
+        {
+          "subFlowRef": "jsongreet"
+        }
+      ],
+      "transition": "Close ticket on ServiceNow"
+    },
+    {
+      "name": "Close ticket on ServiceNow",
+      "type": "operation",
+      "end": true,
+      "actions": [
+        {
+          "functionRef": {
+            "refName": "Close ticket on ServiceNow",
+            "arguments": {
+              "id": ".ticketId"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
